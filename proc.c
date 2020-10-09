@@ -12,6 +12,11 @@ struct {
   struct proc proc[NPROC];
 } ptable;
 
+typedef struct{
+  int num_elements;
+  struct proc* procs[NPROC];
+} queue_t;
+
 static struct proc *initproc;
 
 int nextpid = 1;
@@ -20,10 +25,124 @@ extern void trapret(void);
 
 static void wakeup1(void *chan);
 
+queue_t queue0;  // fila com prioridade 0
+queue_t queue1;  // fila com prioridade 1
+queue_t queue2;  // fila com prioridade 2
+
+// ------------------------------------- Funcoes para as Filas ----------------------------------------
+
+void create_queue(queue_t *Q){
+    Q->num_elements = 0;
+    for (int i = 0; i < NPROC; i++)
+        Q->procs[i] = 0;
+}
+
+void insert(queue_t *Q, struct proc* p){  
+    Q->procs[Q->num_elements] = p;
+    Q->num_elements++;
+} 
+
+void remove(queue_t *Q, struct proc* p){
+    int pos;
+    int found = 0;
+    pos = 0;
+    while(pos < Q->num_elements && !found){
+        if(Q->procs[pos] == p)
+            found = 1;
+        else
+            pos++;
+    }
+    if(found == 1){
+        while(pos < Q->num_elements-1){
+            Q->procs[pos] = Q->procs[pos+1];
+            pos++;
+        }
+        Q->procs[Q->num_elements-1] = 0;
+        Q->num_elements--;
+    }
+}
+
+struct proc* search(queue_t *Q){
+    struct proc* p = 0;
+    for(int i = 0; i < Q->num_elements; i++){
+      if(Q->procs[i]->state == RUNNABLE){
+        p = Q->procs[i];
+        break;
+      }
+    }
+
+    return p;
+}
+
+//---------------------------------------- Fim das funcoes para as filas ------------------------------
+
+
+void print(queue_t Q){
+
+    for (int i = 0; i < Q.num_elements; i++)
+      cprintf("%s | %d | %d\n", Q.procs[i]->name, Q.procs[i]->pid, Q.procs[i]->priority);
+
+}
+
+int set_prio(int priority){
+    cprintf("\nFILA 0\n");
+    print(queue0);
+    cprintf("\nFILA 1\n");
+    print(queue1);
+    cprintf("\nFILA 2\n");
+    print(queue2);
+    cprintf("\nPID MYPROC: %d\n", myproc()->pid);
+    
+    acquire(&ptable.lock);
+    int flag = 0;
+    if(myproc()->priority == 2 && priority != 2){
+        remove(&queue2, myproc());
+        flag++;
+    }     
+    else if (myproc()->priority == 1 && priority != 1){
+        remove(&queue1, myproc());
+        flag++;
+    }
+    else if (myproc()->priority == 0 && priority != 0){
+        remove(&queue0, myproc());
+        flag++;
+    }
+    if (flag != 0){
+        if (priority == 0){
+            insert(&queue0, myproc());
+            myproc()->priority = 0;
+        }
+        else if (priority == 1){
+            insert(&queue1, myproc());
+            myproc()->priority = 1;
+        }
+        else if (priority == 2){
+            insert(&queue2, myproc());
+            myproc()->priority = 2;
+        }
+    }
+
+  release(&ptable.lock);
+  cprintf("\nFILA 0\n");
+  print(queue0);
+  cprintf("\nFILA 1\n");
+  print(queue1);
+  cprintf("\nFILA 2\n");
+  print(queue2);
+
+  return myproc()->priority;
+}
+
+
 void
 pinit(void)
 {
   initlock(&ptable.lock, "ptable");
+
+  // criar as 3 filas
+  create_queue(&queue0);
+  create_queue(&queue1);
+  create_queue(&queue2);
 }
 
 // Must be called with interrupts disabled
@@ -88,6 +207,8 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+  p->priority = 2;
+  insert(&queue2, p);
 
   release(&ptable.lock);
 
@@ -332,10 +453,23 @@ scheduler(void)
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
+/* 
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
+*/
+    // procure um processo no estado RUNNABLE na fila 2
+    p = search(&queue2);
 
+    // procure um processo no estado RUNNABLE na fila 1
+    if(p == 0)
+      p = search(&queue1);
+
+    // procure um processo no estado RUNNABLE na fila 0
+    if(p == 0)
+      p = search(&queue0);
+
+    if(p != 0){
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
@@ -350,6 +484,7 @@ scheduler(void)
       // It should have changed its p->state before coming back.
       c->proc = 0;
     }
+
     release(&ptable.lock);
 
   }
