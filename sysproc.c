@@ -104,11 +104,11 @@ int
 sys_wait2(void)
 {
   int *stime, *retime, *rutime;
-  if(argptr(0, (void *) &stime, sizeof(*stime)) < 0)
+  if(argptr(0, (char **) &stime, sizeof(int)) < 0)
     return -1;
-  if(argptr(0, (void *) &retime, sizeof(*retime)) < 0)
+  if(argptr(1, (char **) &retime, sizeof(int)) < 0)
     return -1;
-  if(argptr(0, (void *) &rutime, sizeof(*rutime)) < 0)
+  if(argptr(2, (char **) &rutime, sizeof(int)) < 0)
     return -1;
   return wait2(stime, retime, rutime);
 }

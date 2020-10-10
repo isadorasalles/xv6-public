@@ -468,7 +468,7 @@ wait2(int *stime, int *retime, int *rutime)
         else if (p->priority == 0)
           remove(&queue0, p);
 
-        *stime = p->retime;
+        *stime = p->stime;
         *retime = p->retime;
         *rutime = p->rutime;
         pid = p->pid;
