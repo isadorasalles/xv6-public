@@ -412,6 +412,13 @@ wait(void)
       havekids = 1;
       if(p->state == ZOMBIE){
         // Found one.
+        if (p->priority == 2)
+         remove(&queue2, p);
+        else if (p->priority == 1)
+          remove(&queue1, p);
+        else if (p->priority == 0)
+          remove(&queue0, p);
+          
         pid = p->pid;
         kfree(p->kstack);
         p->kstack = 0;
@@ -454,6 +461,13 @@ wait2(int *stime, int *retime, int *rutime)
       havekids = 1;
       if(p->state == ZOMBIE){
         // Found one.
+        if (p->priority == 2)
+         remove(&queue2, p);
+        else if (p->priority == 1)
+          remove(&queue1, p);
+        else if (p->priority == 0)
+          remove(&queue0, p);
+
         *stime = p->retime;
         *retime = p->retime;
         *rutime = p->rutime;
