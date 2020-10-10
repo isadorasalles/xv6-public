@@ -496,14 +496,14 @@ wait2(int *stime, int *retime, int *rutime)
 }
 
 void update(){
-  struct proc *p;
-  // acquire(&ptable.lock);
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-    if(p->state == SLEEPING) p->stime++;
-    if(p->state == RUNNABLE) p->retime++;
-    if(p->state == RUNNING) p->rutime++;
-  }
-  // release(&ptable.lock);
+    struct proc *p;
+    acquire(&ptable.lock);
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+        if(p->state == SLEEPING) p->stime++;
+        if(p->state == RUNNABLE) p->retime++;
+        if(p->state == RUNNING) p->rutime++;
+    }
+    release(&ptable.lock);
 }
 
 //PAGEBREAK: 42
