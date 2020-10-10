@@ -444,7 +444,7 @@ wait(void)
 }
 
 int
-wait2(int *stime, int *retime, int *rutime)
+wait2(int* retime, int* rutime, int* stime)
 {
   struct proc *p;
   int havekids, pid;
