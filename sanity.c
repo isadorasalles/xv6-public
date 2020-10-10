@@ -20,17 +20,17 @@ int main(int argc, char *argv[]){
                 exit();
             } 
             else if (x == 0){   // child
-                printf(1, "\nProcess %d created\n", i);
+                printf(1, "\nProcess %d created\n", f);
                 pid = getpid();
                 printf(1, "PID do processo %d\n", pid);
                 if (pid % 3 == 0){
                     set_prio(2);
+                    printf(0, "CPU-Bound %d\n", pid);
                     for (int j = 0; j < 100; j++){
                         for (int k = 0; k < 1000000; k++){
                             asm("nop");
                         }
                     }
-                    printf(0, "CPU-Bound %d\n", pid);
                 }
                 
                 else if (pid % 3 == 1){

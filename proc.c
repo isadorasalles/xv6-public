@@ -83,12 +83,12 @@ void print(queue_t Q){
 }
 
 int set_prio(int priority){
-//    cprintf("FILA 0:");
+//  cprintf("FILA 0:");
 //  print(queue0);
-  //  cprintf("FILA 1: ");
-    //print(queue1);
-    //cprintf("FILA 2:");
-    //print(queue2);
+//  cprintf("FILA 1: ");
+//  print(queue1);
+//  cprintf("FILA 2:");
+//  print(queue2);
 
     acquire(&ptable.lock);
     int flag = 0;
@@ -120,12 +120,12 @@ int set_prio(int priority){
     }
 
   release(&ptable.lock);
-  cprintf("FILA 0: ");
-  print(queue0);
-  cprintf("FILA 1: ");
-  print(queue1);
-  cprintf("FILA 2: ");
-  print(queue2);
+ // cprintf("FILA 0: ");
+ // print(queue0);
+ // cprintf("FILA 1: ");
+ // print(queue1);
+ // cprintf("FILA 2: ");
+ // print(queue2);
 
   return myproc()->priority;
 }
@@ -470,6 +470,7 @@ wait2(int* retime, int* rutime, int* stime)
         *stime = p->stime;
         *retime = p->retime;
         *rutime = p->rutime;
+
         pid = p->pid;
         kfree(p->kstack);
         p->kstack = 0;
@@ -537,6 +538,7 @@ scheduler(void)
           (p->priority == 1 && search(&queue2) == 0)||  // se a prioridade eh 1 e a fila 2 não tem nada pronto para rodar
           (p->priority == 0 && search(&queue1) == 0 && search(&queue2) == 0)){  // se a prioridade eh 0 e as filas 1 e 2 não tem nada pronto para rodar
 
+        //cprintf("\nPASSEI AQUI\n");
         // Aging 
         for(pp = ptable.proc; pp < &ptable.proc[NPROC]; pp++){
           // aumenta os ticks de espera dos processos prontos para rodar que nao foram escolhidos
@@ -549,6 +551,13 @@ scheduler(void)
               insert(&queue2, pp);
               pp->priority = 2;
               pp->waiting_ticks = 0;
+              cprintf("\nAGING 1 TO 2\n");
+              cprintf("FILA 0: ");
+              print(queue0);
+              cprintf("FILA 1: ");
+              print(queue1);
+              cprintf("FILA 2: ");
+              print(queue2);
             }
 
             // troca da fila 0 para a fila 1
@@ -557,10 +566,18 @@ scheduler(void)
               insert(&queue1, pp);
               pp->priority = 1;
               pp->waiting_ticks = 0;
+              cprintf("\nAGING 0 TO 1\n");
+              cprintf("FILA 0: ");
+              print(queue0);
+              cprintf("FILA 1: ");
+              print(queue1);
+              cprintf("FILA 2: ");
+              print(queue2);
             }
 
           }
         }
+
         // Switch to chosen process.  It is the process's job
         // to release ptable.lock and then reacquire it
         // before jumping back to us.
