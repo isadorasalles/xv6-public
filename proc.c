@@ -443,10 +443,6 @@ wait2(int *stime, int *retime, int *rutime)
   struct proc *p;
   int havekids, pid;
   struct proc *curproc = myproc();
-
-  *stime = curproc->retime;
-  *retime = curproc->retime;
-  *rutime = curproc->rutime;
   
   acquire(&ptable.lock);
   for(;;){
@@ -458,6 +454,9 @@ wait2(int *stime, int *retime, int *rutime)
       havekids = 1;
       if(p->state == ZOMBIE){
         // Found one.
+        *stime = p->retime;
+        *retime = p->retime;
+        *rutime = p->rutime;
         pid = p->pid;
         kfree(p->kstack);
         p->kstack = 0;
