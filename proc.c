@@ -208,6 +208,11 @@ found:
   p->state = EMBRYO;
   p->pid = nextpid++;
   p->priority = 2;
+  p->ctime = ticks;
+  p->stime = 0;
+  p->retime = 0;
+  p->rutime = 0;
+
   insert(&queue2, p);
 
   release(&ptable.lock);
