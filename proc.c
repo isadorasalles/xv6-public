@@ -78,18 +78,17 @@ int search(queue_t *Q){
 void print(queue_t Q){
 
     for (int i = 0; i < Q.num_elements; i++)
-      cprintf("%s | %d | %d\n", Q.procs[i]->name, Q.procs[i]->pid, Q.procs[i]->priority);
-
+      cprintf("%s ", Q.procs[i]->name);
+    cprintf("\n");
 }
 
 int set_prio(int priority){
-    cprintf("\nFILA 0\n");
-    print(queue0);
-    cprintf("\nFILA 1\n");
-    print(queue1);
-    cprintf("\nFILA 2\n");
-    print(queue2);
-    cprintf("\nPID MYPROC: %d\n", myproc()->pid);
+//    cprintf("FILA 0:");
+//  print(queue0);
+  //  cprintf("FILA 1: ");
+    //print(queue1);
+    //cprintf("FILA 2:");
+    //print(queue2);
 
     acquire(&ptable.lock);
     int flag = 0;
@@ -121,11 +120,11 @@ int set_prio(int priority){
     }
 
   release(&ptable.lock);
-  cprintf("\nFILA 0\n");
+  cprintf("FILA 0: ");
   print(queue0);
-  cprintf("\nFILA 1\n");
+  cprintf("FILA 1: ");
   print(queue1);
-  cprintf("\nFILA 2\n");
+  cprintf("FILA 2: ");
   print(queue2);
 
   return myproc()->priority;
