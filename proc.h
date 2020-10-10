@@ -55,6 +55,7 @@ struct proc {
   int stime; // tempo sleeping
   int retime; // tempo runnable
   int rutime; // tempo running
+  int waiting_ticks;
 };
 
 // Process memory is laid out contiguously, low addresses first:

@@ -63,15 +63,13 @@ void remove(queue_t *Q, struct proc* p){
 }
 
 struct proc* search(queue_t *Q){
-    struct proc* p = 0;
     for(int i = 0; i < Q->num_elements; i++){
       if(Q->procs[i]->state == RUNNABLE){
-        p = Q->procs[i];
-        break;
+        return 1;
       }
     }
 
-    return p;
+    return 0;
 }
 
 //---------------------------------------- Fim das funcoes para as filas ------------------------------
@@ -92,7 +90,7 @@ int set_prio(int priority){
     cprintf("\nFILA 2\n");
     print(queue2);
     cprintf("\nPID MYPROC: %d\n", myproc()->pid);
-    
+
     acquire(&ptable.lock);
     int flag = 0;
     if(myproc()->priority == 2 && priority != 2){
@@ -214,6 +212,8 @@ found:
   p->rutime = 0;
 
   insert(&queue2, p);
+
+  p->waiting_ticks = 0;
 
   release(&ptable.lock);
 
@@ -449,6 +449,7 @@ void
 scheduler(void)
 {
   struct proc *p;
+  struct proc *pp;
   struct cpu *c = mycpu();
   c->proc = 0;
   
@@ -458,38 +459,55 @@ scheduler(void)
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
-/* 
+ 
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
-*/
-    // procure um processo no estado RUNNABLE na fila 2
-    p = search(&queue2);
 
-    // procure um processo no estado RUNNABLE na fila 1
-    if(p == 0)
-      p = search(&queue1);
+      if ((p->priority == 2)|| // se a prioridade eh 2
+          (p->priority == 1 && search(&queue2) == 0)||  // se a prioridade eh 1 e a fila 2 não tem nada pronto para rodar
+          (p->priority == 0 && search(&queue1) == 0 && search(&queue2) == 0)){  // se a prioridade eh 0 e as filas 1 e 2 não tem nada pronto para rodar
 
-    // procure um processo no estado RUNNABLE na fila 0
-    if(p == 0)
-      p = search(&queue0);
+        // Aging 
+        for(pp = ptable.proc; pp < &ptable.proc[NPROC]; pp++){
+          // aumenta os ticks de espera dos processos prontos para rodar que nao foram escolhidos
+          if (pp->pid != p->pid && pp->state == RUNNABLE){
+            pp->waiting_ticks++;
 
-    if(p != 0){
-      // Switch to chosen process.  It is the process's job
-      // to release ptable.lock and then reacquire it
-      // before jumping back to us.
-      c->proc = p;
-      switchuvm(p);
-      p->state = RUNNING;
+            // troca da fila 1 para a fila 2
+            if (pp->priority == 1 && pp->waiting_ticks > _1TO2){
+              remove(&queue1, pp);
+              insert(&queue2, pp);
+              pp->priority = 2;
+              pp->waiting_ticks = 0;
+            }
 
-      swtch(&(c->scheduler), p->context);
-      switchkvm();
+            // troca da fila 0 para a fila 1
+            if (pp->priority == 0 && pp->waiting_ticks > _0TO1){
+              remove(&queue0, pp);
+              insert(&queue1, pp);
+              pp->priority = 1;
+              pp->waiting_ticks = 0;
+            }
 
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
-      c->proc = 0;
+          }
+        }
+        // Switch to chosen process.  It is the process's job
+        // to release ptable.lock and then reacquire it
+        // before jumping back to us.
+        c->proc = p;
+        switchuvm(p);
+        p->state = RUNNING;
+
+        swtch(&(c->scheduler), p->context);
+        switchkvm();
+
+        // Process is done running for now.
+        // It should have changed its p->state before coming back.
+        c->proc = 0;
+        }
     }
-
+  
     release(&ptable.lock);
 
   }
