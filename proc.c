@@ -418,7 +418,7 @@ wait(void)
           remove(&queue1, p);
         else if (p->priority == 0)
           remove(&queue0, p);
-          
+
         pid = p->pid;
         kfree(p->kstack);
         p->kstack = 0;
@@ -494,6 +494,17 @@ wait2(int *stime, int *retime, int *rutime)
     // Wait for children to exit.  (See wakeup1 call in proc_exit.)
     sleep(curproc, &ptable.lock);  //DOC: wait-sleep
   }
+}
+
+void update(){
+  struct proc *p;
+  // acquire(&ptable.lock);
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->state == SLEEPING) p->stime++;
+    if(p->state == RUNNABLE) p->retime++;
+    if(p->state == RUNNING) p->rutime++;
+  }
+  // release(&ptable.lock);
 }
 
 //PAGEBREAK: 42

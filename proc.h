@@ -58,6 +58,8 @@ struct proc {
   int waiting_ticks;
 };
 
+void update();
+
 // Process memory is laid out contiguously, low addresses first:
 //   text
 //   original data and bss
