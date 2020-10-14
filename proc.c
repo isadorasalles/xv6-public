@@ -72,7 +72,7 @@ int search(queue_t *Q){
     return 0;
 }
 
-//---------------------------------------- Fim das funcoes para as filas ------------------------------
+//------------------------------------- Fim das funcoes para as filas ----------------------------------
 
 
 void print(queue_t Q){
@@ -83,12 +83,9 @@ void print(queue_t Q){
 }
 
 int set_prio(int priority){
-//  cprintf("FILA 0:");
-//  print(queue0);
-//  cprintf("FILA 1: ");
-//  print(queue1);
-//  cprintf("FILA 2:");
-//  print(queue2);
+
+    if (priority != 2 && priority != 1 && priority != 0)
+      return -1;
 
     acquire(&ptable.lock);
     int flag = 0;
@@ -120,14 +117,8 @@ int set_prio(int priority){
     }
 
   release(&ptable.lock);
- // cprintf("FILA 0: ");
- // print(queue0);
- // cprintf("FILA 1: ");
- // print(queue1);
- // cprintf("FILA 2: ");
- // print(queue2);
 
-  return myproc()->priority;
+  return 0;
 }
 
 
@@ -204,15 +195,17 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
-  p->priority = 2;
+  p->priority = 2; // seta prioridade inicial para 2
+
+  // inicializa metricas
   p->ctime = ticks;
   p->stime = 0;
   p->retime = 0;
   p->rutime = 0;
 
-  insert(&queue2, p);
+  insert(&queue2, p);  // insere processo na fila 2
 
-  p->waiting_ticks = 0;
+  p->waiting_ticks = 0; 
 
   release(&ptable.lock);
 
@@ -538,59 +531,43 @@ scheduler(void)
           (p->priority == 1 && search(&queue2) == 0)||  // se a prioridade eh 1 e a fila 2 não tem nada pronto para rodar
           (p->priority == 0 && search(&queue1) == 0 && search(&queue2) == 0)){  // se a prioridade eh 0 e as filas 1 e 2 não tem nada pronto para rodar
 
-        //cprintf("\nPASSEI AQUI\n");
-        // Aging 
-        for(pp = ptable.proc; pp < &ptable.proc[NPROC]; pp++){
-          // aumenta os ticks de espera dos processos prontos para rodar que nao foram escolhidos
-          if (pp->pid != p->pid && pp->state == RUNNABLE){
-            pp->waiting_ticks++;
+          // Aging 
+          for(pp = ptable.proc; pp < &ptable.proc[NPROC]; pp++){
+            // aumenta os ticks de espera dos processos prontos para rodar que nao foram escolhidos
+            if (pp->pid != p->pid && pp->state == RUNNABLE){
+              pp->waiting_ticks++;
 
-            // troca da fila 1 para a fila 2
-            if (pp->priority == 1 && pp->waiting_ticks > _1TO2){
-              remove(&queue1, pp);
-              insert(&queue2, pp);
-              pp->priority = 2;
-              pp->waiting_ticks = 0;
-              cprintf("\nAGING 1 TO 2\n");
-              cprintf("FILA 0: ");
-              print(queue0);
-              cprintf("FILA 1: ");
-              print(queue1);
-              cprintf("FILA 2: ");
-              print(queue2);
+              // troca da fila 1 para a fila 2
+              if (pp->priority == 1 && pp->waiting_ticks > _1TO2){
+                remove(&queue1, pp);
+                insert(&queue2, pp);
+                pp->priority = 2;
+                pp->waiting_ticks = 0;
+              }
+
+              // troca da fila 0 para a fila 1
+              if (pp->priority == 0 && pp->waiting_ticks > _0TO1){
+                remove(&queue0, pp);
+                insert(&queue1, pp);
+                pp->priority = 1;
+                pp->waiting_ticks = 0;
+              }
+
             }
-
-            // troca da fila 0 para a fila 1
-            if (pp->priority == 0 && pp->waiting_ticks > _0TO1){
-              remove(&queue0, pp);
-              insert(&queue1, pp);
-              pp->priority = 1;
-              pp->waiting_ticks = 0;
-              cprintf("\nAGING 0 TO 1\n");
-              cprintf("FILA 0: ");
-              print(queue0);
-              cprintf("FILA 1: ");
-              print(queue1);
-              cprintf("FILA 2: ");
-              print(queue2);
-            }
-
           }
-        }
+          // Switch to chosen process.  It is the process's job
+          // to release ptable.lock and then reacquire it
+          // before jumping back to us.
+          c->proc = p;
+          switchuvm(p);
+          p->state = RUNNING;
 
-        // Switch to chosen process.  It is the process's job
-        // to release ptable.lock and then reacquire it
-        // before jumping back to us.
-        c->proc = p;
-        switchuvm(p);
-        p->state = RUNNING;
+          swtch(&(c->scheduler), p->context);
+          switchkvm();
 
-        swtch(&(c->scheduler), p->context);
-        switchkvm();
-
-        // Process is done running for now.
-        // It should have changed its p->state before coming back.
-        c->proc = 0;
+          // Process is done running for now.
+          // It should have changed its p->state before coming back.
+          c->proc = 0;
         }
     }
   

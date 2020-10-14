@@ -12,20 +12,16 @@ int main(int argc, char *argv[]){
 
     n = atoi(argv[1]);
     x = 0;
-
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < 5; i++) {
         for (int f = 0; f < n; f++){
             x = fork ();
             if (x < 0) {  // erro
                 exit();
             } 
-            else if (x == 0){   // child
-                printf(1, "\nProcess %d created\n", f);
+            else if (x == 0){   // child process
                 pid = getpid();
-                printf(1, "PID do processo %d\n", pid);
                 if (pid % 3 == 0){
                     set_prio(2);
-                    printf(0, "CPU-Bound %d\n", pid);
                     for (int j = 0; j < 100; j++){
                         for (int k = 0; k < 1000000; k++){
                             asm("nop");
@@ -35,10 +31,9 @@ int main(int argc, char *argv[]){
                 
                 else if (pid % 3 == 1){
                     set_prio(1);
-                    printf(0, "S-Bound%d\n", pid);
                     for (int j = 0; j < 100; j++){
                         for (int k = 0; k < 1000000; k++){
-                            if (k%100 == 0)
+                            if (k%10000 == 0)
                                 yield();   
                         }
                     }
@@ -46,7 +41,6 @@ int main(int argc, char *argv[]){
                 }
                 else if (pid % 3 == 2){
                     set_prio(0);
-                    printf(0, "IO-Bound%d\n",pid);
                     for (int j = 0; j < 100; j++){
                         sleep(1);
                     }
@@ -66,20 +60,20 @@ int main(int argc, char *argv[]){
             m[pid % 3][3] += stime + retime + rutime;
             
             if (pid % 3 == 0)
-                printf(1, "PID = %d  CPU-Bound  Ready time = %d  Run time = %d  Sleeping time = %d\n", 
+                printf(1, "PID = %d  Type: CPU-Bound  Ready time = %d  Run time = %d  Sleeping time = %d\n", 
                 pid, retime, rutime, stime);
             else if (pid % 3 == 1)
-                printf(1, "PID = %d  S-Bound  Ready time = %d  Run time = %d  Sleeping time = %d\n", 
+                printf(1, "PID = %d  Type: S-Bound  Ready time = %d  Run time = %d  Sleeping time = %d\n", 
                 pid, retime, rutime, stime);
             else if (pid % 3 == 2)
-                printf(1, "PID = %d  I/O-Bound  Ready time = %d  Run time = %d  Sleeping time = %d\n", 
+                printf(1, "PID = %d  Type: I/O-Bound  Ready time = %d  Run time = %d  Sleeping time = %d\n", 
                 pid, retime, rutime, stime);
-
+        
         }
         
     }
     printf(1, "\n");
-    printf(1, "CPU-Bound statistics:\n");
+    printf(1, "CPU-Bound metrics:\n");
     if (types[0] == 0)
         printf(1, "  - No processes of this type were runned\n\n");
     else {
@@ -90,7 +84,7 @@ int main(int argc, char *argv[]){
         printf(1, "\n");
     }
 
-    printf(1, "S-Bound statistics:\n");
+    printf(1, "S-Bound metrics:\n");
     if (types[1] == 0)
         printf(1, "  - No processes of this type were runned\n\n");
     else {
@@ -101,16 +95,15 @@ int main(int argc, char *argv[]){
         printf(1, "\n");
     }
 
-    printf(1, "I/O-Bound statistics:\n");
+    printf(1, "I/O-Bound metrics:\n");
     if (types[2] == 0)
         printf(1, "  - No processes of this type were runned\n\n");
     else {
         printf(1, "  - Average sleeping time   = %d\n", m[2][0] / types[2]);
         printf(1, "  - Average ready time      = %d\n", m[2][1] / types[2]);
-        printf(1, "  - Average running  time   = %d\n", m[2][2] / types[2]);
+        printf(1, "  - Average running time    = %d\n", m[2][2] / types[2]);
         printf(1, "  - Average turnaround      = %d\n", m[2][3] / types[2]);
         printf(1, "\n");
     }
-
     exit();
 }
